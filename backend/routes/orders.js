@@ -14,11 +14,13 @@ router.post('/',async(req,res,next)=>{
     for(const input of req.body.items){
       const p=products.find(x=>String(x._id)===String(input.product)),qty=Number(input.quantity);
       if(!p||!Number.isInteger(qty)||qty<1){const e=new Error('Invalid cart quantity');e.status=422;throw e}
+      const selectedSize=String(input.selectedSize||'').trim().toUpperCase();
+      if(p.sizes?.length&&!p.sizes.includes(selectedSize)){const e=new Error(`Choose an available size for ${p.name}`);e.status=422;throw e}
       const updated=await Product.findOneAndUpdate({_id:p._id,status:'active',stock:{$gte:qty}},{$inc:{stock:-qty,sold:qty}},{new:true});
       if(!updated){const e=new Error(`${p.name} does not have enough stock`);e.status=409;throw e}
       reserved.push({product:p._id,quantity:qty});
       const line=p.price*qty;subtotal+=line;
-      items.push({product:p.id,seller:p.seller,store:p.store,productName:p.name,image:p.images[0],unitPrice:p.price,quantity:qty,subtotal:line});
+      items.push({product:p.id,seller:p.seller,store:p.store,productName:p.name,image:p.images[0],selectedSize:selectedSize||undefined,unitPrice:p.price,quantity:qty,subtotal:line});
     }
     const shippingFee=subtotal>=1500?0:99,sellers=[...new Set(items.map(i=>String(i.seller)))];
     const created=await Order.create({orderNumber:`SS-${Date.now()}-${Math.floor(Math.random()*900+100)}`,customer:req.user.id,items,shippingAddress:req.body.shippingAddress,subtotal,shippingFee,total:subtotal+shippingFee,fulfillments:sellers.map(seller=>({seller,status:'processing'})),idempotencyKey:key});

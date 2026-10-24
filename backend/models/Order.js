@@ -3,6 +3,7 @@ const item = new mongoose.Schema({
   product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true }, seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   store: { type: mongoose.Schema.Types.ObjectId, ref: 'Store', required: true }, productName: { type: String, required: true }, image: String,
   unitPrice: { type: Number, required: true }, quantity: { type: Number, required: true, min: 1 }, subtotal: { type: Number, required: true }
+  , selectedSize: { type: String, trim: true }
 }, { _id: false });
 const fulfillment = new mongoose.Schema({ seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, status: { type: String, enum: ['processing','packed','shipped','delivered','cancelled'], default: 'processing' } }, { _id: false });
 const schema = new mongoose.Schema({

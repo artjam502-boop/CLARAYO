@@ -7,6 +7,7 @@ const schema = new mongoose.Schema({
   phone: { type: String, trim: true, default: '' },
   address: { line1: String, city: String, province: String, postalCode: String },
   wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+  followedStores: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Store' }],
   accountStatus: { type: String, enum: ['active','suspended'], default: 'active' }
 }, { timestamps: true });
 schema.set('toJSON', { transform: (_, value) => { delete value.passwordHash; return value; } });

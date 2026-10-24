@@ -2,6 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import Product from '../models/Product.js';
+import Store from '../models/Store.js';
 import { protect, allow } from '../middleware/auth.js';
 
 const router = Router();
@@ -26,6 +27,28 @@ router.delete('/wishlist/:productId', allow('customer'), async (req, res, next) 
   try {
     await User.updateOne({ _id: req.user.id }, { $pull: { wishlist: req.params.productId } });
     res.json({ success: true, message: 'Removed from wishlist' });
+  } catch (error) { next(error); }
+});
+
+router.get('/following/:storeId', allow('customer', 'seller'), async (req, res, next) => {
+  try {
+    const following = await User.exists({ _id: req.user.id, followedStores: req.params.storeId });
+    res.json({ success: true, data: { following: Boolean(following) } });
+  } catch (error) { next(error); }
+});
+
+router.post('/following/:storeId', allow('customer', 'seller'), async (req, res, next) => {
+  try {
+    if (!await Store.exists({ _id: req.params.storeId, approvalStatus: 'approved' })) return res.status(404).json({ success: false, message: 'Store not found' });
+    await User.updateOne({ _id: req.user.id }, { $addToSet: { followedStores: req.params.storeId } });
+    res.json({ success: true, message: 'Store followed' });
+  } catch (error) { next(error); }
+});
+
+router.delete('/following/:storeId', allow('customer', 'seller'), async (req, res, next) => {
+  try {
+    await User.updateOne({ _id: req.user.id }, { $pull: { followedStores: req.params.storeId } });
+    res.json({ success: true, message: 'Store unfollowed' });
   } catch (error) { next(error); }
 });
 
