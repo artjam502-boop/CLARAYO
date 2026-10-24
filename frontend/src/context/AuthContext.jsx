@@ -1,0 +1,4 @@
+import React from 'react';
+import {createContext,useContext,useEffect,useState} from 'react';import api from '../services/api';
+const C=createContext();export const useAuth=()=>useContext(C);
+export function AuthProvider({children}){const [user,setUser]=useState(null),[loading,setLoading]=useState(true);useEffect(()=>{if(!localStorage.getItem('clarayo_token'))return setLoading(false);api.get('/auth/me').then(r=>setUser(r.data.data)).catch(()=>localStorage.removeItem('clarayo_token')).finally(()=>setLoading(false))},[]);const authenticate=async(path,data)=>{const r=await api.post(`/auth/${path}`,data);localStorage.setItem('clarayo_token',r.data.data.token);setUser(r.data.data.user);return r.data.data.user};const logout=()=>{localStorage.removeItem('clarayo_token');setUser(null)};return <C.Provider value={{user,setUser,loading,login:(d)=>authenticate('login',d),register:(d)=>authenticate('register',d),logout}}>{children}</C.Provider>}

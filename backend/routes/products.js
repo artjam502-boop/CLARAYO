@@ -1,0 +1,14 @@
+import { Router } from 'express';
+import slugify from 'slugify';
+import Product from '../models/Product.js';
+import Store from '../models/Store.js';
+import { protect, allow } from '../middleware/auth.js';
+const router=Router();
+router.get('/',async(req,res,next)=>{try{const page=Math.max(+req.query.page||1,1),limit=Math.min(+req.query.limit||12,48);const approvedStores=await Store.find({approvalStatus:'approved'}).distinct('_id');const q={status:'active',store:{$in:approvedStores}};if(req.query.featured==='true')q.featured=true;if(req.query.search)q.$text={$search:req.query.search};if(req.query.category)q.category=req.query.category;if(req.query.seller)q.seller=req.query.seller;if(req.query.minPrice||req.query.maxPrice)q.price={...(req.query.minPrice&&{$gte:+req.query.minPrice}),...(req.query.maxPrice&&{$lte:+req.query.maxPrice})};if(req.query.inStock==='true')q.stock={$gt:0};const sort={newest:'-createdAt',price_asc:'price',price_desc:'-price',popular:'-sold'}[req.query.sort]||'-featured -createdAt';const[items,total]=await Promise.all([Product.find(q).populate('category','name slug').populate('store','storeName slug').sort(sort).skip((page-1)*limit).limit(limit),Product.countDocuments(q)]);res.json({success:true,data:items,pagination:{page,limit,total,pages:Math.ceil(total/limit)}})}catch(e){next(e)}});
+router.get('/:id',async(req,res,next)=>{try{const item=await Product.findById(req.params.id).populate('category').populate('store','storeName slug description logo');if(!item)return res.status(404).json({success:false,message:'Product not found'});res.json({success:true,data:item})}catch(e){next(e)}});
+router.use(protect,allow('seller','admin'));
+router.post('/',async(req,res,next)=>{try{let seller=req.user.id,store=req.body.store;if(req.user.role==='seller'){const s=await Store.findOne({seller,approvalStatus:'approved'});if(!s)return res.status(403).json({success:false,message:'Your seller store is not approved'});store=s.id;}const item=await Product.create({...req.body,seller,store,slug:`${slugify(req.body.name,{lower:true,strict:true})}-${Date.now().toString(36)}`});res.status(201).json({success:true,data:item})}catch(e){next(e)}});
+router.put('/:id',async(req,res,next)=>{try{const q={_id:req.params.id,...(req.user.role==='seller'&&{seller:req.user.id})};const safe={...req.body};delete safe.seller;delete safe.store;const item=await Product.findOneAndUpdate(q,safe,{new:true,runValidators:true});if(!item)return res.status(404).json({success:false,message:'Product not found'});res.json({success:true,data:item})}catch(e){next(e)}});
+router.delete('/:id',async(req,res,next)=>{try{const q={_id:req.params.id,...(req.user.role==='seller'&&{seller:req.user.id})};const item=await Product.findOneAndDelete(q);if(!item)return res.status(404).json({success:false,message:'Product not found'});res.json({success:true,message:'Product deleted'})}catch(e){next(e)}});
+export default router;
+
