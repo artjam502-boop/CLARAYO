@@ -67,13 +67,12 @@ app.get('/api/health', (req, res) => {
 app.use(notFound);
 app.use(errorHandler);
 
-connectDB()
-  .then(() => {
-    app.listen(port, () => {
-      console.log(`CLARAYO API on http://localhost:${port}`);
-    });
-  })
-  .catch((error) => {
-    console.error('Database connection failed:', error.message);
-    process.exit(1);
+await connectDB();
+
+if (!process.env.VERCEL) {
+  app.listen(port, () => {
+    console.log(`CLARAYO API on http://localhost:${port}`);
   });
+}
+
+export default app;

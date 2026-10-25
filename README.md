@@ -15,6 +15,23 @@ Frontend: `http://localhost:5173` · API: `http://localhost:5000/api`
 
 The application starts with an empty marketplace so products, stores, categories, sellers, and orders come from real user and administrator workflows. The optional `npm run seed` command is intended only for isolated demonstrations. Use `npm run clean:sample` to remove those known demonstration records without deleting user-created data.
 
+## Vercel deployment
+
+The root `vercel.json` deploys the repository as two services in one Vercel project:
+
+- `frontend`: the public Vite application, routed from `/(.*)`
+- `backend`: the Express API, routed from `/api/(.*)`
+
+The frontend uses the same-origin `/api` path in production and keeps
+`http://localhost:5000/api` as its development fallback. There are no service
+bindings because the browser—not the frontend service's server-side runtime—calls
+the API, and the backend does not call another repository service.
+
+Configure `MONGODB_URI` and `JWT_SECRET` in the Vercel project environment before
+deploying. Optional backend variables include `JWT_EXPIRES_IN` and `CLIENT_URL`.
+Do not create a binding URL variable manually; add a service binding only if a
+future server-side service directly calls another internal service.
+
 ## Architecture
 
 The React client uses Context for authentication and cart state, Axios for API calls, role guards for protected routes, Framer Motion for lightweight interaction, and Recharts for dashboards. The Express API separates models, routes, middleware, configuration, and scripts. MongoDB is the source of truth for users, stores, products, categories, orders, and reviews.
